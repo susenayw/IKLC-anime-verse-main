@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - feature/manual-http-implementation
     tags:
       - 'v*'
   workflow_dispatch:
@@ -23,18 +24,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Using Java 17 is good for modern Android/Flutter builds
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # Install NDK and accept licenses in one step (cleaner)
-      - name: Setup Android SDK and NDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager --install "ndk;29.0.13113456"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;29.0.13113456"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -46,32 +49,24 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 🔑 FIX 1: Decode Keystore
-      # Place the keystore file in the android/app directory.
-      - name: Decode and Save Keystore File
+      - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 🔑 FIX 2: Create key.properties
-      # Create key.properties at the REPOSITORY ROOT (required by build.gradle.kts)
-      # and use the full path to the keystore file.
-      - name: Create key.properties File
+      - name: Create key.properties
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          cat > key.properties << EOF
+          cat > android/key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          storeFile=android/app/upload-keystore.jks
+          storeFile=upload-keystore.jks
           EOF
-          # Verification step (optional, but helpful)
-          echo "key.properties created at repo root:"
-          cat key.properties
 
       - name: Decode google-services.json
         env:
@@ -80,7 +75,6 @@ jobs:
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
       - name: Build Release APK
-        # Added --dart-define steps for cleaner secret handling if needed later
         run: flutter build apk --release
 
       - name: Get Version
