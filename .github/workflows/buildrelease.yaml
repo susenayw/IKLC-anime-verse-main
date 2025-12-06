@@ -75,23 +75,23 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 5. FIX: Create key.properties (FINAL PATH FIX)
-      # This resolves the 'storeFile is missing' error by using a path relative to the Android directory.
+      # 5. FIX: Create key.properties (FINAL ABSOLUTE PATH FIX)
+      # This addresses the 'storeFile is missing' error by using the absolute path.
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # Writing to the root of the project (key.properties) for rootProject.file() to find it
+          # Writing to the root of the project (key.properties)
           cat > key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          # Defining the path to the keystore relative to the ANDROID directory (where build.gradle.kts often executes from)
-          storeFile=app/upload-keystore.jks
+          # Defining the ABSOLUTE path to the keystore using $GITHUB_WORKSPACE
+          storeFile=$GITHUB_WORKSPACE/android/app/upload-keystore.jks
           EOF
-          echo "key.properties created at repo root with relative path: app/upload-keystore.jks"
+          echo "key.properties created at repo root with absolute path."
 
       - name: Decode google-services.json
         env:
