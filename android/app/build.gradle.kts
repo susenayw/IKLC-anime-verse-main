@@ -20,6 +20,7 @@ if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(it)
     }
 }
+
 android {
     namespace = "com.example.anime_verse"
     compileSdk = flutter.compileSdkVersion
