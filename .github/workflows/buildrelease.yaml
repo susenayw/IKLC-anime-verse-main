@@ -29,14 +29,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install NDK
-        run: sdkmanager --install "ndk;29.0.13113456"
+      - name: Setup Android SDK and NDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "ndk;29.0.13113456"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -48,24 +44,31 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Decode Keystore
+      # 🔑 Step 1: Decode Keystore
+      # File is placed at: ./android/app/upload-keystore.jks
+      - name: Decode and Save Keystore File
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Create key.properties
+      # 🔑 Step 2: Create key.properties (FIXED PATHS)
+      # File is placed at: ./key.properties (Repository Root)
+      - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
+          # Writing to the root of the project (key.properties)
           cat > key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
+          # Defining the path to the keystore from the project root
           storeFile=android/app/upload-keystore.jks
           EOF
+          echo "key.properties created at repo root with path: android/app/upload-keystore.jks"
 
       - name: Decode google-services.json
         env:
