@@ -44,20 +44,25 @@ jobs:
         run: |
           SDK_MANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           
-          # Install the specific NDK version (still necessary to download the files)
-          $SDK_MANAGER --install "ndk;29.0.13113456"
+          echo "Attempting NDK installation..."
+          # Install the specific NDK version using 'yes |' for non-interactive acceptance during install
+          yes | $SDK_MANAGER --install "ndk;29.0.13113456"
           
           # Create the necessary 'licenses' directory if it doesn't exist
-          mkdir -p $ANDROID_HOME/licenses
+          LICENSE_PATH="$ANDROID_HOME/licenses"
+          mkdir -p $LICENSE_PATH
+          
+          echo "Manually creating license files at $LICENSE_PATH..."
           
           # Manually create the required NDK license file content
-          echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $ANDROID_HOME/licenses/android-ndk-license
+          # This is the hash Gradle checks for to confirm NDK license acceptance.
+          echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $LICENSE_PATH/android-ndk-license
           
           # Manually create the required SDK licenses files (for completeness)
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
-          echo "84831b94d1e9dbbe9201946bb8979e8a52026e3a" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $LICENSE_PATH/android-sdk-license
+          echo "84831b94d1e9dbbe9201946bb8979e8a52026e3a" > $LICENSE_PATH/android-sdk-preview-license
           
-          echo "All required licenses have been manually accepted."
+          echo "All required licenses have been manually accepted. Continuing build."
 
 
       - name: Install Dependencies
