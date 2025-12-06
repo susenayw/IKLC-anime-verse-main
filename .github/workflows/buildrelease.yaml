@@ -23,28 +23,33 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 1. Setup Java
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK and NDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager --install "ndk;29.0.13113456"
-
-      - name: Set up Flutter
+      # 2. Setup Flutter (This step automatically installs the Android SDK and sets $ANDROID_HOME)
+      - name: Set up Flutter and Android SDK
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.3'
           channel: 'stable'
           cache: true
 
+      # 3. Accept Licenses and Install NDK (FIXED: Uses the $ANDROID_HOME path)
+      # This resolves the 'sdkmanager: command not found' error.
+      - name: Accept Android SDK licenses and Install NDK
+        run: |
+          # Use the explicit path to sdkmanager via $ANDROID_HOME
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;29.0.13113456"
+
       - name: Install Dependencies
         run: flutter pub get
 
-      # 🔑 Step 1: Decode Keystore
+      # 4. Decode Keystore
       # File is placed at: ./android/app/upload-keystore.jks
       - name: Decode and Save Keystore File
         env:
@@ -52,8 +57,9 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 🔑 Step 2: Create key.properties (FIXED PATHS)
+      # 5. Create key.properties (FIXED: Pathing for signing)
       # File is placed at: ./key.properties (Repository Root)
+      # This resolves the 'missing required property "storeFile"' error.
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -68,7 +74,7 @@ jobs:
           # Defining the path to the keystore from the project root
           storeFile=android/app/upload-keystore.jks
           EOF
-          echo "key.properties created at repo root with path: android/app/upload-keystore.jks"
+          echo "key.properties created at repo root."
 
       - name: Decode google-services.json
         env:
