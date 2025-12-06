@@ -30,7 +30,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. Setup Flutter (This step automatically installs the Android SDK and sets $ANDROID_HOME)
+      # 2. Setup Flutter (Sets up the Android SDK and makes $ANDROID_HOME available)
       - name: Set up Flutter and Android SDK
         uses: subosito/flutter-action@v2
         with:
@@ -38,13 +38,18 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. Accept Licenses and Install NDK (FIXED: Uses the $ANDROID_HOME path)
-      # This resolves the 'sdkmanager: command not found' error.
+      # 3. FIX: Accept Licenses and Install NDK
+      # This addresses 'sdkmanager: command not found' and 'LicenceNotAcceptedException'.
       - name: Accept Android SDK licenses and Install NDK
         run: |
           # Use the explicit path to sdkmanager via $ANDROID_HOME
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;29.0.13113456"
+          SDK_MANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          
+          # Accept general licenses (needed for Gradle/NDK)
+          echo "y" | $SDK_MANAGER --licenses || true
+          
+          # Install the specific NDK version after licenses are accepted
+          $SDK_MANAGER --install "ndk;29.0.13113456"
 
       - name: Install Dependencies
         run: flutter pub get
@@ -57,9 +62,8 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 5. Create key.properties (FIXED: Pathing for signing)
-      # File is placed at: ./key.properties (Repository Root)
-      # This resolves the 'missing required property "storeFile"' error.
+      # 5. FIX: Create key.properties (Correct path for Gradle)
+      # This addresses the previous 'storeFile is missing' error.
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
