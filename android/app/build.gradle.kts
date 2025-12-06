@@ -13,7 +13,8 @@ plugins {
 }
 
 // Load keystore properties
-val keystorePropertiesFile = rootProject.file("key.properties")
+// FIX: Changed path to look inside the 'android/' directory, matching the final YAML fix
+val keystorePropertiesFile = project.rootProject.file("android/key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     FileInputStream(keystorePropertiesFile).use {
