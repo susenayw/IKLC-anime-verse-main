@@ -38,18 +38,25 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. FIX: Accept Licenses and Install NDK
-      # This addresses 'sdkmanager: command not found' and 'LicenceNotAcceptedException'.
+      # 3. FIX: Accept Licenses and Install NDK (The definitive CI/CD fix)
+      # This resolves the recurring 'LicenceNotAcceptedException'.
       - name: Accept Android SDK licenses and Install NDK
         run: |
-          # Use the explicit path to sdkmanager via $ANDROID_HOME
           SDK_MANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           
-          # Accept general licenses (needed for Gradle/NDK)
-          echo "y" | $SDK_MANAGER --licenses || true
-          
-          # Install the specific NDK version after licenses are accepted
+          # Install the specific NDK version
           $SDK_MANAGER --install "ndk;29.0.13113456"
+          
+          # Create the necessary 'licenses' directory
+          mkdir -p $ANDROID_HOME/licenses
+          
+          # Manually create the required license files that Gradle checks for
+          echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $ANDROID_HOME/licenses/android-ndk-license
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
+          echo "84831b94d1e9dbbe9201946bb8979e8a52026e3a" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          
+          echo "All required licenses have been manually accepted."
+
 
       - name: Install Dependencies
         run: flutter pub get
@@ -63,7 +70,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
       # 5. FIX: Create key.properties (Correct path for Gradle)
-      # This addresses the previous 'storeFile is missing' error.
+      # File is placed at: ./key.properties (Repository Root)
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
