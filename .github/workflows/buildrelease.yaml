@@ -85,8 +85,8 @@ jobs:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          # FIX: Reference the file from the repository root using the '../' prefix.
-          STORE_FILE: ../upload-keystore.jks
+          # FIX: Change the path reference to move up TWO directories to the repository root
+          STORE_FILE: ../../upload-keystore.jks
         run: flutter build apk --release
 
       - name: Get Version
