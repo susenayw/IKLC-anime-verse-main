@@ -38,8 +38,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 3. FIX: Accept Licenses and Install NDK (The definitive CI/CD fix)
-      # This resolves the recurring 'LicenceNotAcceptedException' by manually creating license files.
+      # 3. Accept Licenses and Install NDK
       - name: Accept Android SDK licenses and Install NDK
         run: |
           SDK_MANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -48,16 +47,14 @@ jobs:
           # Install the specific NDK version using 'yes |' for non-interactive acceptance during install
           yes | $SDK_MANAGER --install "ndk;29.0.13113456"
           
-          # Create the necessary 'licenses' directory if it doesn't exist
+          # Create the necessary 'licenses' directory
           LICENSE_PATH="$ANDROID_HOME/licenses"
           mkdir -p $LICENSE_PATH
           
           echo "Manually creating license files at $LICENSE_PATH..."
           
-          # Manually create the required NDK license file content
+          # Manually create the required license files
           echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $LICENSE_PATH/android-ndk-license
-          
-          # Manually create the required SDK licenses files (for completeness)
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $LICENSE_PATH/android-sdk-license
           echo "84831b94d1e9dbbe9201946bb8979e8a52026e3a" > $LICENSE_PATH/android-sdk-preview-license
           
@@ -75,23 +72,23 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 5. FIX: Create key.properties (FINAL ABSOLUTE PATH FIX)
-      # This addresses the 'storeFile is missing' error by using the absolute path.
+      # 5. FIX: Create key.properties (CRITICAL PATH FIX)
+      # This step creates the file at android/key.properties to match build.gradle.kts
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # Writing to the root of the project (key.properties)
-          cat > key.properties << EOF
+          # WRITING TO THE CORRECT PATH: android/key.properties
+          cat > android/key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          # Defining the ABSOLUTE path to the keystore using $GITHUB_WORKSPACE
-          storeFile=$GITHUB_WORKSPACE/android/app/upload-keystore.jks
+          # Defining the path to the keystore relative to the ANDROID directory
+          storeFile=app/upload-keystore.jks
           EOF
-          echo "key.properties created at repo root with absolute path."
+          echo "key.properties created at android/key.properties."
 
       - name: Decode google-services.json
         env:
