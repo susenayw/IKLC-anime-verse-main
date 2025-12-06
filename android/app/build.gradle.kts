@@ -13,15 +13,13 @@ plugins {
 }
 
 // Load keystore properties
-// FIX: Changed path to look inside the 'android/' directory, matching the final YAML fix
-val keystorePropertiesFile = project.rootProject.file("key.properties")
+val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     FileInputStream(keystorePropertiesFile).use {
         keystoreProperties.load(it)
     }
 }
-
 android {
     namespace = "com.example.anime_verse"
     compileSdk = flutter.compileSdkVersion
@@ -41,7 +39,7 @@ android {
             keyAlias = keystoreProperties["keyAlias"] as? String
             keyPassword = keystoreProperties["keyPassword"] as? String
             // ensure storeFile is converted to String before calling file(...)
-            storeFile = (keystoreProperties["storeFile"] as? String)?.let { project.file("android/$it") }
+            storeFile = (keystoreProperties["storeFile"] as? String)?.let { file(it) }
             storePassword = keystoreProperties["storePassword"] as? String
         }
     }
