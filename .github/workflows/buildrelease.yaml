@@ -65,15 +65,13 @@ jobs:
         run: flutter pub get
 
       # 4. Decode Keystore
-      # The file will be placed at: android/app/upload-keystore.jks
+      # FIX: Saving the file to the REPOSITORY ROOT
       - name: Decode and Save Keystore File
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          echo "Keystore file decoded to android/app/upload-keystore.jks"
-
-      # NOTE: Removed the "Create key.properties File" step.
+          echo "$KEYSTORE_BASE64" | base64 --decode > upload-keystore.jks
+          echo "Keystore file decoded to repository root (upload-keystore.jks)."
 
       - name: Decode google-services.json
         env:
@@ -84,12 +82,11 @@ jobs:
       # 5. Build Release APK (Pass secrets as Environment Variables)
       - name: Build Release APK
         env:
-          # These environment variables are read by the getProperty() function in build.gradle
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          # This variable sets the path to the decoded file
-          STORE_FILE: android/app/upload-keystore.jks
+          # FIX: Reference the file from the repository root using the '../' prefix.
+          STORE_FILE: ../upload-keystore.jks
         run: flutter build apk --release
 
       - name: Get Version
