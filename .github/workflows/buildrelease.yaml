@@ -73,22 +73,21 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
       # 5. FIX: Create key.properties (CRITICAL PATH FIX)
-      # This step creates the file at android/key.properties to match build.gradle.kts
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # WRITING TO THE CORRECT PATH: android/key.properties
-          cat > android/key.properties << EOF
+          # Writing to the REPOSITORY ROOT (key.properties)
+          cat > key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          # Defining the path to the keystore relative to the ANDROID directory
-          storeFile=app/upload-keystore.jks
+          # Defining the path to the keystore from the REPOSITORY ROOT
+          storeFile=android/app/upload-keystore.jks
           EOF
-          echo "key.properties created at android/key.properties."
+          echo "key.properties created at repository root."
 
       - name: Decode google-services.json
         env:
