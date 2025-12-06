@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -54,21 +54,6 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Convert Keystore to PKCS12
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          keytool -importkeystore \
-            -srckeystore android/app/upload-keystore.jks \
-            -destkeystore android/app/compatible-keystore.jks \
-            -srcstoretype JKS -deststoretype PKCS12 \
-            -srcstorepass "$STORE_PASSWORD" -deststorepass "$STORE_PASSWORD" \
-            -srckeypass "$KEY_PASSWORD" -destkeypass "$KEY_PASSWORD" \
-            -srcalias "$KEY_ALIAS" -destalias "$KEY_ALIAS" \
-            -noprompt
-
       - name: Create key.properties
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -79,7 +64,7 @@ jobs:
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          storeFile=compatible-keystore.jks
+          storeFile=upload-keystore.jks
           EOF
 
       - name: Decode google-services.json
