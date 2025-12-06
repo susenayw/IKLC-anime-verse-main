@@ -12,21 +12,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Custom function to safely load properties from key.properties or fall back to environment variables (CI/CD)
-fun getProperty(key: String): String? {
-    val properties = Properties()
-    val keystorePropertiesFile = rootProject.file("key.properties")
-
-    // Check key.properties first (for local development)
-    if (keystorePropertiesFile.exists()) {
-        FileInputStream(keystorePropertiesFile).use { properties.load(it) }
-        return properties[key] as? String
+// Load keystore properties
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use {
+        keystoreProperties.load(it)
     }
-
-    // Fallback to environment variable (for CI/CD)
-    return System.getenv(key)
 }
-
 android {
     namespace = "com.example.anime_verse"
     compileSdk = flutter.compileSdkVersion
@@ -43,12 +36,11 @@ android {
 
     signingConfigs {
         create("release") {
-            // Using environment variables (passed by GitHub Actions) or local key.properties
-            keyAlias = getProperty("KEY_ALIAS")
-            keyPassword = getProperty("KEY_PASSWORD")
-            // STORE_FILE path is set in the YAML action
-            storeFile = getProperty("STORE_FILE")?.let { file(it) }
-            storePassword = getProperty("STORE_PASSWORD")
+            keyAlias = keystoreProperties["keyAlias"] as? String
+            keyPassword = keystoreProperties["keyPassword"] as? String
+            // ensure storeFile is converted to String before calling file(...)
+            storeFile = (keystoreProperties["storeFile"] as? String)?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as? String
         }
     }
 
@@ -65,7 +57,8 @@ android {
 
     buildTypes {
         release {
-            // Ensure the signing config is set to the 'release' config we just defined
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("release")
         }
     }
