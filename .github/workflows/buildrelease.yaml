@@ -55,7 +55,6 @@ jobs:
           echo "Manually creating license files at $LICENSE_PATH..."
           
           # Manually create the required NDK license file content
-          # This is the hash Gradle checks for to confirm NDK license acceptance.
           echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $LICENSE_PATH/android-ndk-license
           
           # Manually create the required SDK licenses files (for completeness)
@@ -76,23 +75,23 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
-      # 5. FIX: Create key.properties (Correct path for Gradle)
-      # File is placed at: ./key.properties (Repository Root)
+      # 5. FIX: Create key.properties (FINAL PATH FIX)
+      # This resolves the 'storeFile is missing' error by using a path relative to the Android directory.
       - name: Create key.properties File
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          # Writing to the root of the project (key.properties)
+          # Writing to the root of the project (key.properties) for rootProject.file() to find it
           cat > key.properties << EOF
           storePassword=$STORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$KEY_ALIAS
-          # Defining the path to the keystore from the project root
-          storeFile=android/app/upload-keystore.jks
+          # Defining the path to the keystore relative to the ANDROID directory (where build.gradle.kts often executes from)
+          storeFile=app/upload-keystore.jks
           EOF
-          echo "key.properties created at repo root."
+          echo "key.properties created at repo root with relative path: app/upload-keystore.jks"
 
       - name: Decode google-services.json
         env:
