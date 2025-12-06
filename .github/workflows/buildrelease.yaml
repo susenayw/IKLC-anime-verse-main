@@ -30,7 +30,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 2. Setup Flutter (Sets up the Android SDK and makes $ANDROID_HOME available)
+      # 2. Setup Flutter
       - name: Set up Flutter and Android SDK
         uses: subosito/flutter-action@v2
         with:
@@ -44,31 +44,26 @@ jobs:
           SDK_MANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           
           echo "Attempting NDK installation..."
-          # Install the specific NDK version using 'yes |' for non-interactive acceptance during install
+          # Install the specific NDK version
           yes | $SDK_MANAGER --install "ndk;29.0.13113456"
           
-          # Create the necessary 'licenses' directory
+          # Manually create the required license files
           LICENSE_PATH="$ANDROID_HOME/licenses"
           mkdir -p $LICENSE_PATH
-          
-          echo "Manually creating license files at $LICENSE_PATH..."
-          
-          # Manually create the required license files
           echo "8913d648756c9a49b6863d0a9b897825591cd69e" > $LICENSE_PATH/android-ndk-license
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $LICENSE_PATH/android-sdk-license
           echo "84831b94d1e9dbbe9201946bb8979e8a52026e3a" > $LICENSE_PATH/android-sdk-preview-license
-          
-          echo "All required licenses have been manually accepted. Continuing build."
+          echo "Licenses accepted."
 
 
       - name: Install Dependencies
         run: flutter pub get
 
-      # 4. Decode Keystore
-      # FIX: Saving the file to the REPOSITORY ROOT
+      # 4. Decode Keystore (FIX: Renamed variable to match GitHub Secret name)
+      # File is placed at: ./upload-keystore.jks (Repository Root)
       - name: Decode and Save Keystore File
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEY_STORE_BASE64 }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > upload-keystore.jks
           echo "Keystore file decoded to repository root (upload-keystore.jks)."
@@ -79,13 +74,13 @@ jobs:
         run: |
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
 
-      # 5. Build Release APK (Pass secrets as Environment Variables)
+      # 5. Build Release APK (FIX: STORE_FILE path set to '../../upload-keystore.jks')
       - name: Build Release APK
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          # FIX: Change the path reference to move up TWO directories to the repository root
+          # Path to the keystore file from android/app/build.gradle
           STORE_FILE: ../../upload-keystore.jks
         run: flutter build apk --release
 
